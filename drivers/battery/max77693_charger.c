@@ -115,7 +115,13 @@
 #define MAX77693_CHG_CV_PRM_SHIFT		0
 #define MAX77693_CHG_CV_PRM_4_20V		0x16
 #define MAX77693_CHG_CV_PRM_4_30V		0x1A
+
+#if defined(CONFIG_MACH_GC2PD)
+#define MAX77693_CHG_CV_PRM_4_35V		0x1C
+#else
 #define MAX77693_CHG_CV_PRM_4_35V		0x1D
+#endif
+
 #define MAX77693_CHG_CV_PRM_4_40V		0x1F
 
 /* MAX77693_CHG_REG_CHG_CNFG_06 */
@@ -239,9 +245,9 @@ struct max77693_charger_data {
 #endif
 };
 
-#if defined(CONFIG_MACH_KONA)		
-bool mhl_connected = false; 
-#endif			
+#if defined(CONFIG_MACH_KONA)
+bool mhl_connected = false;
+#endif
 
 static void max77693_dump_reg(struct max77693_charger_data *chg_data)
 {
@@ -898,14 +904,14 @@ chg_det_err:
 		state = POWER_SUPPLY_TYPE_BATTERY;
 		break;
 	case 0x1:		/* USB cabled */
-#if defined(CONFIG_MACH_KONA)		
+#if defined(CONFIG_MACH_KONA)
 		if(mu_adc1k == 0x80) //MHL charging
 		{
 			state = POWER_SUPPLY_TYPE_MAINS;
 			mhl_connected = true;
 		}
-		else	
-#endif			
+		else
+#endif
 			state = POWER_SUPPLY_TYPE_USB;
 
 #ifdef CONFIG_BATTERY_WPC_CHARGER
@@ -922,7 +928,7 @@ chg_det_err:
 	case 0x5:		/* Apple 1A or 2A charger */
 	case 0x6:		/* Special charger */
 		state = POWER_SUPPLY_TYPE_MAINS;
-#if defined(CONFIG_MACH_KONA)		
+#if defined(CONFIG_MACH_KONA)
 		mhl_connected = false;
 #endif
 		break;
@@ -1492,7 +1498,7 @@ static void max77693_recovery_work(struct work_struct *work)
 		pr_info("%s: try to recovery, cnt(%d)\n", __func__,(chg_data->soft_reg_recovery_cnt + 1));
 		/* release softreg state */
 		chg_data->soft_reg_state = false;
-		
+
 		max77693_set_input_current(chg_data,chg_data->charging_current);
 #else
 	if ((chg_data->soft_reg_recovery_cnt < RECOVERY_CNT) && (
@@ -1532,7 +1538,7 @@ static void max77693_recovery_work(struct work_struct *work)
 #if defined(CONFIG_MACH_KONA)
 		in_curr = max77693_get_input_current(chg_data);
 		pr_info("%s: read input_curr (%dmA)\n", __func__, in_curr);
-		
+
 		if(in_curr < chg_data->charging_current)
 		{
 			chg_data->soft_reg_recovery_cnt = 0;
@@ -1641,7 +1647,7 @@ static int max77693_charger_set_property(struct power_supply *psy,
 				max77693_write_reg(chg_data->max77693->i2c,
 						   MAX77693_CHG_REG_CHG_CNFG_00,
 						   chg_cnfg_00);
-#if defined(CONFIG_MACH_T0)
+#if defined(CONFIG_MACH_T0) || defined(CONFIG_MACH_KONA)
 				gpio_request(GPIO_OTG_EN, "USB_OTG_EN");
 				gpio_direction_output(GPIO_OTG_EN, 1);
 				gpio_free(GPIO_OTG_EN);
